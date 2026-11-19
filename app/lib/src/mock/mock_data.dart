@@ -291,7 +291,7 @@ List<Recruitment> seedRecruitments(DateTime now, List<AppUser> generalUsers) {
   ];
 }
 
-/// ゆずりあい・交換のシード。anchor（現在地）からの相対距離で配置する。
+/// 近況報告のシード。anchor（現在地）からの相対距離で配置する。
 /// id が 'cx-seed-' 始まりのものは GPS 更新のたびに再配置される
 /// （AppState.applyGps を参照）。
 class _ExchangeSeedSpec {
@@ -313,11 +313,11 @@ const List<_ExchangeSeedSpec> _exchangeSeedSpecs = [
   _ExchangeSeedSpec(
     'cx-seed-1',
     'u-fire-nana',
-    'give',
-    '焚き火台（五徳付き・使用済み・清掃済み）',
+    'shoot',
+    '焚き火で焼きマシュマロを作ってみました',
     'みどり湖畔サイト 周辺',
-    '買い替えで手元に余裕が出たので、'
-        '使ってくださる方にゆずります。手渡し前提です。',
+    '初めての焚き火でもふわふわに焼けました。'
+        '次はスモアク材も試してみます。',
     0.3,
     -0.6,
     Duration(hours: 2),
@@ -325,11 +325,11 @@ const List<_ExchangeSeedSpec> _exchangeSeedSpecs = [
   _ExchangeSeedSpec(
     'cx-seed-2',
     'u-bike-miu',
-    'wanted',
-    'コンパクトなカセットコンロを探しています',
+    'post',
+    '今週末はソロキャンの予定です',
     '駅裏の駐車場 周辺',
-    'ツーリング用の小さいものを探しています。不要ギアとの'
-        '交換の対応も可能です。DMお待ちしています。',
+    'バイク積載の練習も兼ねています。'
+        '同じサイトの方がいたら挨拶しましょう。',
     -0.2,
     0.8,
     Duration(hours: 5),
@@ -337,23 +337,23 @@ const List<_ExchangeSeedSpec> _exchangeSeedSpecs = [
   _ExchangeSeedSpec(
     'cx-seed-3',
     'u-gear-kei',
-    'trade',
-    'ガスランタンと LEDランタンを交換します',
+    'event',
+    '河川敷でギア自慢会に参加してきました',
     '市役所裏の駐車場 周辺',
-    '充電式に買い替えたいので交換希望です。状態は写真で'
-        '送ります。公共の駐車場で受け渡しできます。',
+    'それぞれのこだわりの装備が見られて勉強に'
+        'なりました。次回も参加予定です。',
     -0.9,
     -0.3,
     Duration(hours: 26),
   ),
 ];
 
-List<GearExchange> buildSeedGearExchanges(
+List<CampReport> buildSeedCampReports(
     DateTime now, double anchorLat, double anchorLng) {
   final cos = (anchorLat * math.pi / 180.0).abs().clamp(0.01, 1.0);
   return [
     for (final s in _exchangeSeedSpecs)
-      GearExchange(
+      CampReport(
         id: s.id,
         posterId: s.posterId,
         kind: s.kind,

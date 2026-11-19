@@ -180,7 +180,7 @@ void main() {
   });
 
   group('端末内スナップショット（モック永続化）', () {
-    test('募集・ゆずりあい・コミュニティは保存用Mapとの往復ができる', () {
+    test('募集・近況報告・コミュニティは保存用Mapとの往復ができる', () {
       final now = DateTime(2026, 3, 1, 12, 0);
       final rec = Recruitment(
         id: 'r-1',
@@ -200,21 +200,21 @@ void main() {
       expect(restored.title, rec.title);
       expect(restored.memberIds, rec.memberIds);
 
-      final item = GearExchange(
+      final item = CampReport(
         id: 'cx-1',
         posterId: 'me',
-        kind: 'give',
-        itemDescription: 'テスト焚き火台（五徳付き・使用済み）',
+        kind: 'shoot',
+        itemDescription: '焚き火サイトを撮影しました',
         areaName: 'テスト駅',
-        detail: '公共の駐車場で受け渡し',
+        detail: 'みどり湖畔サイトで撮影',
         lat: 35.0,
         lng: 139.0,
         createdAt: now,
         photoPath: '/data/user/0/parts_item_photos/item_photo_1.jpg',
       );
-      final restoredItem = persist.partsExchangeFromMap(
-          persist.partsExchangeToMap(item));
-      expect(restoredItem!.kind, 'give');
+      final restoredItem = persist.campReportFromMap(
+          persist.campReportToMap(item));
+      expect(restoredItem!.kind, 'shoot');
       expect(restoredItem.photoPath, item.photoPath);
       expect(restoredItem.createdAt, item.createdAt);
 
@@ -259,10 +259,10 @@ void main() {
         expiresAt: now.subtract(const Duration(hours: 1)),
         memberIds: const ['me'],
       );
-      final othersItem = GearExchange(
+      final othersItem = CampReport(
         id: 'pd-other',
         posterId: 'someone-else',
-        kind: 'give',
+        kind: 'shoot',
         itemDescription: '他人の投稿',
         areaName: 'どこか',
         detail: '',
@@ -270,10 +270,10 @@ void main() {
         lng: 139.0,
         createdAt: now,
       );
-      final myItem = GearExchange(
+      final myItem = CampReport(
         id: 'pd-mine',
         posterId: 'me',
-        kind: 'give',
+        kind: 'shoot',
         itemDescription: '自分の投稿',
         areaName: 'どこか',
         detail: '',
@@ -283,14 +283,14 @@ void main() {
       );
       final snapshot = {
         'recruitments': [rec, expired].map(persist.recruitmentToMap).toList(),
-        'partsExchanges': [othersItem, myItem].map(persist.partsExchangeToMap).toList(),
+        'campReports': [othersItem, myItem].map(persist.campReportToMap).toList(),
       };
       final pruned = persist.pruneSnapshotToOwner(snapshot, 'me');
       final recIds =
           (pruned['recruitments'] as List).map((e) => e['id'] as String).toList();
       expect(recIds, ['r-mine']); // 期限切れは捨てる
       final itemIds =
-          (pruned['partsExchanges'] as List).map((e) => e['id'] as String).toList();
+          (pruned['campReports'] as List).map((e) => e['id'] as String).toList();
       expect(itemIds, ['pd-mine']); // 他人の投稿は捨てる
     });
   });
@@ -687,42 +687,43 @@ void main() {
       }
     });
 
-    test('ゆずりあい・交換: シードは近い順に並び、ゆずる・探す両方を含む', () {
+    test('近況報告: シードは近い順に並び、撮影・つぶやき・イベントを含む', () {
       final state = AppState();
       state.attachUser(_testUser(state), reseed: true);
-      final items = state.partsExchanges;
+      final items = state.campReports;
       expect(items, isNotEmpty);
-      expect(items.any((p) => p.isGive), isTrue);
-      expect(items.any((p) => p.isWanted), isTrue);
+      expect(items.any((p) => p.isShoot), isTrue);
+      expect(items.any((p) => p.isPost), isTrue);
+      expect(items.any((p) => p.isEvent), isTrue);
       final me = state.me!;
-      double km(GearExchange p) => haversineKm(me.lat, me.lng, p.lat, p.lng);
+      double km(CampReport p) => haversineKm(me.lat, me.lng, p.lat, p.lng);
       for (var i = 1; i < items.length; i++) {
         expect(km(items[i - 1]), lessThanOrEqualTo(km(items[i])));
       }
       for (final p in items) {
         // 相対配置されているので全シードが現在地の近くにある
         expect(km(p), lessThan(6.0));
-        expect(state.partsExchangeDistanceLabel(p), isNotEmpty);
+        expect(state.campReportDistanceLabel(p), isNotEmpty);
       }
     });
 
-    test('ゆずりあい・交換: 登録して一覧に出し、完了で消える', () async {
+    test('近況報告: 登録して一覧に出し、完了で消える', () async {
       final state = AppState();
       state.attachUser(_testUser(state), reseed: true);
-      final created = await state.registerGearExchange(
-        kind: 'give',
-        itemDescription: 'テストギア（テント・使用済み）',
+      final created = await state.registerCampReport(
+        kind: 'shoot',
+        itemDescription: '湖畔でキャンプ飯を作りました',
         areaName: 'テスト会場',
-        detail: '次のイベント会場で受け渡せます',
+        detail: '朝霧の湖面が綺麗でした',
         photoPath: '/data/item_photos/item_photo_1.jpg',
       );
-      expect(created.isGive, isTrue);
+      expect(created.isShoot, isTrue);
       expect(created.photoPath, '/data/item_photos/item_photo_1.jpg');
       expect(
-          state.partsExchanges.any((p) => p.id == created.id), isTrue);
-      await state.closeGearExchange(created.id);
+          state.campReports.any((p) => p.id == created.id), isTrue);
+      await state.closeCampReport(created.id);
       expect(
-          state.partsExchanges.any((p) => p.id == created.id), isFalse);
+          state.campReports.any((p) => p.id == created.id), isFalse);
     });  });
 
   group('models', () {
